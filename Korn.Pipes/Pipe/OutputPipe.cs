@@ -1,20 +1,20 @@
 ﻿using System.Threading.Tasks;
-using System.IO.Pipes;
 using System;
 
 namespace Korn.Pipes
 {
-    public class OutputPipe : AbstractPipe
+    public class OutputPipe : Pipe
     {
         public OutputPipe(PipeConfiguration configuration) : base(configuration)
         {
-            Stream = new NamedPipeServerStream(configuration.GlobalizedName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.WriteThrough);
+            PipeServer = new NamedPipeServer(configuration.GlobalizedName, cancellationToken);
             DeveloperTools.Debug("initialized NamedPipeServerStream");
 
             Task.Run(HandlerBody);
         }
 
-        public readonly NamedPipeServerStream Stream;
+        public readonly NamedPipeServer PipeServer;
+
         public Action<byte[]> Received;
 
         byte[] lengthHeaderBytes = new byte[sizeof(int)];
@@ -22,47 +22,54 @@ namespace Korn.Pipes
         {
             const int PacketLengthThreshold = short.MaxValue;
 
-            while (!cancellationTokenSource.IsCancellationRequested)
+            NamedPipeServer.ReadResult readResult;
+            while (!cancellationToken.IsCancellationRequested)
             {
-                try
+                if (PipeServer.IsConnected)
                 {
-                    if (Stream.IsConnected)
+                    readResult = await PipeServer.ReadAsync(lengthHeaderBytes, 0, lengthHeaderBytes.Length);
+                    DeveloperTools.Debug($"read length header");
+                    if (!readResult.IsSuccess)
+                        continue;
+
+                    var lengthHeader = BitConverter.ToInt32(lengthHeaderBytes, 0);
+                    DeveloperTools.Debug($"length header: {lengthHeader}");
+                    if (lengthHeader == 0)
+                        continue;
+
+                    if (lengthHeader > PacketLengthThreshold)
+                        throw new Exception($"Korn.Pipes.OutputPipe: packet length more than max threshold {PacketLengthThreshold}");
+
+                    var packetBytes = new byte[lengthHeader];
+                    var offset = 0;
+
+                    do
                     {
-                        await Stream.ReadAsync(lengthHeaderBytes, 0, lengthHeaderBytes.Length, cancellationToken);
-                        DeveloperTools.Debug($"read length header");
-                        if (!Stream.IsConnected)
-                            continue;
+                        readResult = await PipeServer.ReadAsync(packetBytes, offset, packetBytes.Length - offset);
+                        if (!readResult.IsSuccess)
+                            break;
 
-                        var lengthHeader = BitConverter.ToInt32(lengthHeaderBytes, 0);
-                        DeveloperTools.Debug($"length header: {lengthHeader}");
-                        if (lengthHeader == 0)
-                            continue;
-
-                        if (lengthHeader > PacketLengthThreshold)
-                            throw new Exception($"Korn.Pipes.OutputPipe: packet length more than max threshold {PacketLengthThreshold}");
-
-                        var packetBytes = new byte[lengthHeader];
-                        var offset = 0;
-                        while ((offset += await Stream.ReadAsync(packetBytes, offset, packetBytes.Length - offset, cancellationToken)) < lengthHeader);
-
-                        DeveloperTools.Debug($"read packet body");
+                        offset += readResult.ReadBytes;
+                    }
+                    while (offset < lengthHeader);
+                    
+                    if (offset == lengthHeader)
                         if (Received != null)
                             Received.Invoke(packetBytes);
-                    }
-                    else
-                    {
-                        var state = Stream.GetState();
-                        DeveloperTools.Debug($"trying handle connection, state: {state}");
-                        if (state == PipeState.Broken)
-                            Stream.Disconnect();
-                        await Stream.WaitForConnectionAsync(cancellationToken);
-                        DeveloperTools.Debug($"handled connection, state: {Stream.GetState()}");
-                    }
                 }
-                catch (TaskCanceledException) { }
+                else
+                {
+                    if (WasConnected && !IsConnected)
+                        OnDisconnected();
+
+                    await PipeServer.WaitForConnectionAsync();
+                    OnConnected();
+                }
             }               
         }
 
-        private protected override void OnDispose() => Stream.Dispose();
+        public void Disconnect() => PipeServer.Disconnect();
+
+        private protected override void OnDispose() => PipeServer.Dispose();
     }
 }

@@ -1,4 +1,4 @@
-﻿#define DEVELOPER_MODE
+﻿#define DEVELOPER_MODEA
 
 using System.Runtime.CompilerServices;
 

@@ -11,12 +11,14 @@ namespace Korn.Pipes
         public static string GlobalizeName(string name)
         {
             if (HashedNamesCache.TryGetHashForName(name, out var cachedHash))
-                return cachedHash;
+                return TransformHash(cachedHash);
 
             var hash = NameHasher.HashNameToString($"Korn.Service.Shared {name}");
             HashedNamesCache.PutHashForName(name, hash);
 
-            return hash;
+            return TransformHash(hash);
+
+            string TransformHash(string input) => "korn." + input;
         }
 
         class NameHasher
