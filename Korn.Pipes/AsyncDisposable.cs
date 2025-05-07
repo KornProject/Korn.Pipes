@@ -5,6 +5,10 @@ namespace Korn.Pipes
 {
     public abstract class AsyncDisposable : IDisposable
     {
+        public AsyncDisposable() : this(new CancellationTokenSource()) { }
+
+        public AsyncDisposable(CancellationTokenSource cancellationTokenSource) => this.cancellationTokenSource = cancellationTokenSource;
+
         private protected CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private protected CancellationToken cancellationToken => cancellationTokenSource.Token;
 

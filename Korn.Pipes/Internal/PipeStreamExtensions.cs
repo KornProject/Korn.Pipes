@@ -4,9 +4,19 @@ using System.Reflection;
 
 static class PipeStreamExtensions
 {
-    static Type type = typeof(PipeStream);
-    static FieldInfo stateField = type.GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic);
-    public static PipeState GetState(this PipeStream pipe) => (PipeState)(int)stateField.GetValue(pipe);
+    static PipeStreamExtensions()
+    {
+        var type = typeof(PipeStream);
+        stateField = 
+            type.GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic)/*.net*/
+            ??type.GetField("m_state", BindingFlags.Instance | BindingFlags.NonPublic)/*.netframework*/;
+
+        if (stateField == null)
+            throw new Exception("PipeStreamExtensions->.cctor(): Unable find the _state field.");
+    }
+
+    static FieldInfo stateField;
+    public static PipeState GetState(this PipeStream pipe) => pipe == null ? PipeState.Closed : (PipeState)(int)stateField.GetValue(pipe);
 }
 
 public enum PipeState

@@ -7,7 +7,7 @@ namespace Korn.Pipes
     {
         public OutputPipe(PipeConfiguration configuration) : base(configuration)
         {
-            PipeServer = new NamedPipeServer(configuration.GlobalizedName, cancellationToken);
+            PipeServer = new NamedPipeServer(configuration.GlobalizedName, cancellationTokenSource);
             DeveloperTools.Debug("initialized NamedPipeServerStream");
 
             Task.Run(HandlerBody);

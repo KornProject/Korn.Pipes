@@ -1,20 +1,19 @@
 ﻿using System;
+using System.IO;
 using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Korn.Pipes
 {
-    public class NamedPipeClient : IDisposable
+    public class NamedPipeClient : AsyncDisposable
     {
-        public NamedPipeClient(string name, CancellationToken cancellationToken)
+        public NamedPipeClient(string name, CancellationTokenSource cancellationTokenSource) : base(cancellationTokenSource)
         {
             Stream = new NamedPipeClientStream(".", name, PipeDirection.Out, PipeOptions.WriteThrough);
-            this.cancellationToken = cancellationToken;
         }
 
         public readonly NamedPipeClientStream Stream;
-        CancellationToken cancellationToken;
 
         public bool IsConnected
         {
@@ -36,9 +35,11 @@ namespace Korn.Pipes
             try
             {
                 Stream.Write(bytes, 0, bytes.Length);
+                return true;
             }
             catch (ObjectDisposedException) { }
-            return true;
+            catch (IOException) { }
+            return false;
         }
 
         public bool Flush()
@@ -46,9 +47,11 @@ namespace Korn.Pipes
             try
             {
                 Stream.Flush();
+                return true;
             }
             catch (ObjectDisposedException) { }
-            return true;
+            catch (IOException) { }
+            return false;
         }
 
         public async Task ConnectAsync()
@@ -62,6 +65,6 @@ namespace Korn.Pipes
             catch (ObjectDisposedException) { }
         }
 
-        public void Dispose() => Stream.Dispose();
+        private protected override void OnDispose() => Stream.Dispose();
     }
 }

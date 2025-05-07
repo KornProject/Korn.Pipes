@@ -8,7 +8,7 @@ namespace Korn.Pipes
     {
         public InputPipe(PipeConfiguration configuration) : base(configuration)
         {
-            PipeClient = new NamedPipeClient(configuration.GlobalizedName, cancellationToken);
+            PipeClient = new NamedPipeClient(configuration.GlobalizedName, cancellationTokenSource);
             DeveloperTools.Debug("initialized NamedPipeClientStream");
 
             Task.Run(HandlerBody);
