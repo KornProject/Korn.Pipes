@@ -9,7 +9,6 @@ namespace Korn.Pipes
         public InputPipe(PipeConfiguration configuration) : base(configuration)
         {
             PipeClient = new NamedPipeClient(configuration.GlobalizedName, cancellationTokenSource);
-            DeveloperTools.Debug("initialized NamedPipeClientStream");
 
             Task.Run(HandlerBody);
         }
@@ -28,7 +27,6 @@ namespace Korn.Pipes
                     var queue = collection.GetConsumingEnumerable();
                     foreach (var bytes in queue)
                     {
-                        DeveloperTools.Debug($"trying write packet");
                         var lengthHeaderBytes = BitConverter.GetBytes(bytes.Length);
 
                         if (!PipeClient.Write(lengthHeaderBytes, 0, lengthHeaderBytes.Length) ||
@@ -42,9 +40,7 @@ namespace Korn.Pipes
                     if (WasConnected && !IsConnected)
                         OnDisconnected();
 
-                    DeveloperTools.Debug($"trying to connect");
                     await PipeClient.ConnectAsync();
-                    DeveloperTools.Debug($"connected");
 
                     OnConnected();
                 }

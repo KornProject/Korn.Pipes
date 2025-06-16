@@ -8,7 +8,6 @@ namespace Korn.Pipes
         public OutputPipe(PipeConfiguration configuration) : base(configuration)
         {
             PipeServer = new NamedPipeServer(configuration.GlobalizedName, cancellationTokenSource);
-            DeveloperTools.Debug("initialized NamedPipeServerStream");
 
             Task.Run(HandlerBody);
         }
@@ -28,12 +27,10 @@ namespace Korn.Pipes
                 if (PipeServer.IsConnected)
                 {
                     readResult = await PipeServer.ReadAsync(lengthHeaderBytes, 0, lengthHeaderBytes.Length);
-                    DeveloperTools.Debug($"read length header");
                     if (!readResult.IsSuccess)
                         continue;
 
                     var lengthHeader = BitConverter.ToInt32(lengthHeaderBytes, 0);
-                    DeveloperTools.Debug($"length header: {lengthHeader}");
                     if (lengthHeader == 0)
                         continue;
 

@@ -1,10 +1,9 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Threading.Tasks;
+using System.Threading;
 using System.IO.Pipes;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Xml.Schema;
+using System;
+using System.Diagnostics;
 
 namespace Korn.Pipes
 {
@@ -42,7 +41,16 @@ namespace Korn.Pipes
             }
             catch (TaskCanceledException) { }
             catch (ObjectDisposedException) { }
-            catch (IOException) { }
+            catch (IOException ex)
+            {
+                // Stream.GetState did not return a Broken state, but the pipe does
+                Stream.Disconnect();
+
+#if DEBUG
+                if (ex.Message != "The pipe is being closed.")
+                    throw;
+#endif
+            }
         }
 
         public async Task<ReadResult> ReadAsync(byte[] buffer) => await ReadAsync(buffer, 0, buffer.Length);

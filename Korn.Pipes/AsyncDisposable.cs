@@ -19,7 +19,6 @@ namespace Korn.Pipes
             if (cancellationToken.IsCancellationRequested)
                 return;
             cancellationTokenSource.Cancel();
-            DeveloperTools.Debug("disposed cancellation token");
 
             OnDispose();
             cancellationTokenSource.Dispose();
