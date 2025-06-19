@@ -3,6 +3,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 
+#pragma warning disable CS8601 // Possible null reference assignment.
 namespace Korn.Pipes
 {
     public static class NameGlobalizer
@@ -39,9 +40,7 @@ namespace Korn.Pipes
 
             public static bool TryGetHashForName(string name, out string result) => TryGetHash(name.GetHashCode(), out result);
 
-#pragma warning disable CS8601 // Possible null reference assignment.
             static bool TryGetHash(int hashCode, out string result) => cachedHashesForNames.TryGetValue(hashCode, out result);
-#pragma warning restore CS8601 // Possible null reference assignment.
 
             public static void PutHashForName(string name, string hash) => PutHash(name.GetHashCode(), hash);
 
@@ -55,6 +54,4 @@ namespace Korn.Pipes
             }
         }
     }
-
-
 }

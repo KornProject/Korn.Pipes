@@ -3,7 +3,6 @@ using System.Threading;
 using System.IO.Pipes;
 using System.IO;
 using System;
-using System.Diagnostics;
 
 namespace Korn.Pipes
 {
